@@ -1,0 +1,28 @@
+name: skrutai-web gate and deploy
+
+on:
+  push:
+    branches:
+      - main
+
+jobs:
+  gate:
+    runs-on: ubuntu-latest
+    env:
+      OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
+      OPENAI_MODEL: ${{ secrets.OPENAI_MODEL }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+      - run: npm ci
+      - run: npm run eval:pre-ship -w skrutai-web
+      - name: Deploy web app to Vercel
+        if: success()
+        working-directory: apps/web
+        run: npx vercel deploy --prod --token "${{ secrets.VERCEL_TOKEN }}"
+      - name: Notify gate failure
+        if: failure()
+        run: |
+          echo "Pre-ship eval failed. Review hallucination, precision, recall, or security metrics."

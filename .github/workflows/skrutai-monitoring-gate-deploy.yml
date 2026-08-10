@@ -1,0 +1,29 @@
+name: skrutai-monitoring gate and deploy
+
+on:
+  push:
+    branches:
+      - main
+
+jobs:
+  gate:
+    runs-on: ubuntu-latest
+    env:
+      SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+      SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+      SUPABASE_TABLE: skrutai_monitoring_state
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+      - run: npm ci
+      - run: npm run ci:check -w skrutai-monitoring
+      - name: Deploy to Vercel
+        if: success()
+        working-directory: apps/monitoring
+        run: npx vercel deploy --prod --token "${{ secrets.VERCEL_TOKEN }}"
+      - name: Notify gate failure
+        if: failure()
+        run: |
+          echo "Gate failed. Hook your email provider or monitoring webhook here."

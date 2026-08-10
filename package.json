@@ -1,0 +1,32 @@
+{
+  "name": "skrutai-webinar-guardian",
+  "private": true,
+  "version": "0.1.0",
+  "workspaces": [
+    "apps/*",
+    "packages/*"
+  ],
+  "scripts": {
+    "dev": "npm run dev -w skrutai-web",
+    "build": "npm run build -w skrutai-web",
+    "start": "npm run start -w skrutai-web",
+    "dev:web": "npm run dev -w skrutai-web",
+    "build:web": "npm run build -w skrutai-web",
+    "start:web": "npm run start -w skrutai-web",
+    "dev:monitoring": "npm run dev -w skrutai-monitoring",
+    "build:monitoring": "npm run build -w skrutai-monitoring",
+    "start:monitoring": "npm run start -w skrutai-monitoring",
+    "ci:check": "node scripts/ci-check.mjs"
+  },
+  "dependencies": {
+    "next": "^15.1.6",
+    "react": "^19.0.0",
+    "react-dom": "^19.0.0"
+  },
+  "devDependencies": {
+    "@types/node": "^22.13.10",
+    "@types/react": "^19.0.10",
+    "@types/react-dom": "^19.0.4",
+    "typescript": "^5.8.2"
+  }
+}
