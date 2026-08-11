@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { createEvent, createInitialState, updateState } from "@skrutai/core";
+import { createEvent, createInitialState, updateState } from "@/lib/core";
 
 export const runtime = "nodejs";
 

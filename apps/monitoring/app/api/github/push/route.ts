@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { createEmail, createEvent, evaluatePreShip, getState, metricStatus, updateState, sendDemoEmail } from "@skrutai/core";
+import { createEmail, createEvent, evaluatePreShip, getState, metricStatus, sendDemoEmail, updateState } from "@/lib/core";
 
 export const runtime = "nodejs";
 

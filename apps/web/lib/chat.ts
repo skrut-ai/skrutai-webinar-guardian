@@ -1,4 +1,5 @@
 import OpenAI from "openai";
+import { Client as LangSmithClient } from "langsmith";
 import { traceable } from "langsmith/traceable";
 import { wrapOpenAI } from "langsmith/wrappers";
 import type { DemoFlags, MetricSnapshot } from "@/lib/types";
@@ -21,6 +22,17 @@ const thresholdMetrics: MetricSnapshot = {
   ragRecall: 0.75,
   security: 0.9
 };
+
+const langSmithProject = process.env.LANGSMITH_PROJECT ?? "skrutai-web";
+const langSmithApiKey = process.env.LANGSMITH_API_KEY;
+const langSmithEndpoint = process.env.LANGSMITH_ENDPOINT ?? "https://api.smith.langchain.com";
+
+export const langSmithClient = langSmithApiKey
+  ? new LangSmithClient({
+      apiKey: langSmithApiKey,
+      apiUrl: langSmithEndpoint
+    })
+  : undefined;
 
 function scoreFromAnswer(answer: string, flags: DemoFlags): MetricSnapshot {
   const lowered = answer.toLowerCase();
@@ -72,7 +84,17 @@ export const generateChatResult = traceable(
     const client = wrapOpenAI(
       new OpenAI({
         apiKey
-      }) as any
+      }) as any,
+      langSmithClient
+        ? {
+            client: langSmithClient,
+            project_name: langSmithProject,
+            tracingEnabled: true
+          }
+        : {
+            project_name: langSmithProject,
+            tracingEnabled: true
+          }
     );
 
     const response = await client.responses.create({
@@ -124,7 +146,10 @@ export const generateChatResult = traceable(
   },
   {
     name: "skrutai_web_chat",
-    run_type: "llm"
+    run_type: "llm",
+    client: langSmithClient,
+    project_name: langSmithProject,
+    tracingEnabled: true
   }
 );
 

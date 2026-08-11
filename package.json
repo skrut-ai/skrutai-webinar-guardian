@@ -19,7 +19,8 @@
     "ci:check": "node scripts/ci-check.mjs"
   },
   "dependencies": {
-    "next": "^15.1.6",
+    "next": "15.5.23",
+    "styled-jsx": "5.1.6",
     "react": "^19.0.0",
     "react-dom": "^19.0.0"
   },

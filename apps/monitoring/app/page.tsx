@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
-import type { DemoState } from "@skrutai/core";
+import type { DemoState } from "@/lib/core";
 
 const emptyState: DemoState = {
   config: {

@@ -19,43 +19,53 @@ export async function GET() {
     );
   }
 
-  const response = await fetch(
-    `https://api.github.com/repos/${owner}/${repo}/actions/workflows/${workflowFile}/runs?branch=${encodeURIComponent(branch)}&per_page=1`,
-    {
-      headers: {
-        Authorization: `Bearer ${token}`,
-        Accept: "application/vnd.github+json",
-        "X-GitHub-Api-Version": "2022-11-28"
+  try {
+    const response = await fetch(
+      `https://api.github.com/repos/${owner}/${repo}/actions/workflows/${workflowFile}/runs?branch=${encodeURIComponent(branch)}&per_page=1`,
+      {
+        headers: {
+          Authorization: `Bearer ${token}`,
+          Accept: "application/vnd.github+json",
+          "X-GitHub-Api-Version": "2022-11-28"
+        }
       }
-    }
-  );
+    );
 
-  if (!response.ok) {
+    if (!response.ok) {
+      return NextResponse.json(
+        {
+          configured: true,
+          error: `GitHub API error ${response.status}`
+        },
+        { status: 502 }
+      );
+    }
+
+    const data = (await response.json()) as {
+      workflow_runs?: Array<{
+        id: number;
+        name: string;
+        status: string;
+        conclusion: string | null;
+        html_url: string;
+        created_at: string;
+        updated_at: string;
+      }>;
+    };
+
+    const run = data.workflow_runs?.[0] ?? null;
+
+    return NextResponse.json({
+      configured: true,
+      run
+    });
+  } catch (error) {
     return NextResponse.json(
       {
         configured: true,
-        error: `GitHub API error ${response.status}`
+        error: error instanceof Error ? error.message : "Failed to reach GitHub API"
       },
       { status: 502 }
     );
   }
-
-  const data = (await response.json()) as {
-    workflow_runs?: Array<{
-      id: number;
-      name: string;
-      status: string;
-      conclusion: string | null;
-      html_url: string;
-      created_at: string;
-      updated_at: string;
-    }>;
-  };
-
-  const run = data.workflow_runs?.[0] ?? null;
-
-  return NextResponse.json({
-    configured: true,
-    run
-  });
 }

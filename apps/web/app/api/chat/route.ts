@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { getState } from "@/lib/store";
-import { generateChatResult } from "@/lib/chat";
+import { generateChatResult, langSmithClient } from "@/lib/chat";
 
 export const runtime = "nodejs";
 
@@ -18,6 +18,14 @@ export async function POST(request: Request) {
       question,
       flags: state.flags
     });
+
+    if (langSmithClient) {
+      try {
+        await langSmithClient.flush();
+      } catch (error) {
+        console.warn("[skrutai-web] LangSmith flush failed", error);
+      }
+    }
 
     return NextResponse.json(result);
   } catch (error) {

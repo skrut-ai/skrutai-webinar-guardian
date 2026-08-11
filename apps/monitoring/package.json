@@ -9,8 +9,8 @@
     "ci:check": "node scripts/ci-check.mjs"
   },
   "dependencies": {
-    "@skrutai/core": "0.1.0",
-    "next": "^15.1.6",
+    "styled-jsx": "5.1.6",
+    "next": "15.5.23",
     "react": "^19.0.0",
     "react-dom": "^19.0.0"
   },
