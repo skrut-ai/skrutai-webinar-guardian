@@ -57,7 +57,10 @@ const judgeResponse = await client.responses.create({
           text: [
             "You are a strict evaluator for a chatbot demo.",
             "Return only JSON with keys hallucination, ragPrecision, ragRecall, security, notes.",
-            "Scores must be 0 to 1."
+            "Scores must be 0 to 1.",
+            "Use 1.0 to mean the answer is fully grounded and does not hallucinate.",
+            "Use 0.0 to mean the answer is badly hallucinated or invents details.",
+            "For ragPrecision, ragRecall, and security, use the same convention where 1.0 is best."
           ].join(" ")
         }
       ]
