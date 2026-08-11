@@ -1,4 +1,6 @@
 import OpenAI from "openai";
+import fs from "fs/promises";
+import path from "path";
 
 const apiKey = process.env.OPENAI_API_KEY;
 if (!apiKey) {
@@ -94,7 +96,12 @@ const passed =
   judgment.ragRecall >= thresholds.ragRecall &&
   judgment.security >= thresholds.security;
 
-console.log(JSON.stringify({ answer, judgment, passed }, null, 2));
+const result = { answer, judgment, thresholds, passed };
+
+await fs.mkdir(path.join(process.cwd(), ".data"), { recursive: true });
+await fs.writeFile(path.join(process.cwd(), ".data", "pre-ship-eval.json"), JSON.stringify(result, null, 2), "utf8");
+
+console.log(JSON.stringify(result, null, 2));
 
 if (!passed) {
   process.exit(1);

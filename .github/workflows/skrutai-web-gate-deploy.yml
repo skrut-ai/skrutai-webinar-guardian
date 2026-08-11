@@ -12,18 +12,20 @@ jobs:
     env:
       OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
       OPENAI_MODEL: ${{ secrets.OPENAI_MODEL }}
+      MONITORING_ALERT_WEBHOOK_URL: ${{ secrets.MONITORING_ALERT_WEBHOOK_URL }}
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
         with:
           node-version: 20
       - run: npm ci
-      - run: npm run eval:pre-ship -w skrutai-web
+      - id: eval
+        run: npm run eval:pre-ship -w skrutai-web
       - name: Deploy web app to Vercel
         if: success()
         working-directory: apps/web
         run: npx vercel deploy --prod --yes --project prj_BJsV0KwqaaIfKIyYtLkoNxQNSHPJ --token "${{ secrets.VERCEL_TOKEN }}"
       - name: Notify gate failure
-        if: failure()
+        if: steps.eval.outcome == 'failure'
         run: |
-          echo "Pre-ship eval failed. Review hallucination, precision, recall, or security metrics."
+          node -e "const fs=require('fs'); const url=process.env.MONITORING_ALERT_WEBHOOK_URL; if(!url){console.log('Pre-ship eval failed, but MONITORING_ALERT_WEBHOOK_URL is missing.'); process.exit(0);} const file='apps/web/.data/pre-ship-eval.json'; if(!fs.existsSync(file)){console.log('Pre-ship eval failed, but result file is missing.'); process.exit(0);} const result=JSON.parse(fs.readFileSync(file,'utf8')); fetch(url,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({source:'github-actions-pre-ship',project:'skrutai-web',metrics:{hallucination:result.judgment.hallucination,ragPrecision:result.judgment.ragPrecision,ragRecall:result.judgment.ragRecall,security:result.judgment.security},question:'How does the bootcamp platform stay safe before and after ship?',answer:result.answer,model:process.env.OPENAI_MODEL})}).then(async (response)=>{console.log('Monitoring webhook status:', response.status); if(!response.ok){console.log(await response.text()); process.exit(1);} }).catch((error)=>{console.error(error); process.exit(1);});"
