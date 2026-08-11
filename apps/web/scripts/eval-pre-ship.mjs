@@ -84,14 +84,14 @@ const jsonText = raw.slice(raw.indexOf("{"), raw.lastIndexOf("}") + 1);
 const judgment = JSON.parse(jsonText);
 
 const thresholds = {
-  hallucination: 0.8,
+  hallucination: 1.0,
   ragPrecision: 0.75,
   ragRecall: 0.75,
   security: 0.9
 };
 
 const passed =
-  judgment.hallucination >= thresholds.hallucination &&
+  judgment.hallucination > thresholds.hallucination &&
   judgment.ragPrecision >= thresholds.ragPrecision &&
   judgment.ragRecall >= thresholds.ragRecall &&
   judgment.security >= thresholds.security;
