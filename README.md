@@ -190,7 +190,7 @@ env:
 
 Notes:
 - The marker must be in the **latest** commit of the push, not an earlier one in the batch.
-- A forced failure **skips the Vercel deploy** (`if: success()`) — a failing gate should not ship. The email still sends because the Notify step uses `if: always() && steps.eval.outcome == 'failure'`.
+- A forced failure **skips the Vercel deploy** (`if: success()`) — a failing gate should not ship. The email still sends because the Notify step uses `if: always() && steps.eval.outcome == 'failure'`
 - A normal push (no marker, toggle off) runs the real LLM eval and deploys on pass.
 
 ### Required workflow secrets
