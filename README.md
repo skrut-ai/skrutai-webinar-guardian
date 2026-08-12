@@ -83,9 +83,18 @@ Then open `http://localhost:3005`.
 The demo uses Resend when these env vars are present:
 
 - `RESEND_API_KEY`
-- `RESEND_FROM_EMAIL`
+- `RESEND_FROM_EMAIL` — the **from** address. Its domain must be verified in Resend to deliver to arbitrary recipients; an unverified domain only delivers to the Resend account owner.
+- `ALERT_RECIPIENT_EMAIL` — the **to** address for breach alerts. Set on the **monitoring** project. Takes precedence over the recipient stored in state, so you can change it without a code change.
 
-If they are missing, the app still works and writes a local console log instead of sending an email.
+If `RESEND_API_KEY` / `RESEND_FROM_EMAIL` are missing, the app still works and writes a local console log instead of sending an email. If `ALERT_RECIPIENT_EMAIL` is unset, alerts fall back to the recipient persisted in monitoring state.
+
+Set or change the recipient on Vercel:
+
+```bash
+# from apps/monitoring
+printf 'you@example.com' | vercel env add ALERT_RECIPIENT_EMAIL production
+vercel --prod   # env changes only apply on a new deploy
+```
 
 ## Monitoring storage
 
@@ -120,14 +129,75 @@ The monitoring GitHub Actions workflow expects the same Supabase secrets in repo
 - `SUPABASE_URL`
 - `SUPABASE_SERVICE_ROLE_KEY`
 
-The table schema is also available in [supabase/skrutai_monitoring_state.sql](/Users/suryakanta/Desktop/hacks/webinars/skrutai-webinar-guardian/supabase/skrutai_monitoring_state.sql).
+The table schema is also available in [supabase/skrutai_monitoring_state.sql](supabase/skrutai_monitoring_state.sql).
 
 ## Real production flow
 
 - The chatbot in `apps/web` now calls OpenAI for real and emits LangSmith traces when `LANGSMITH_TRACING=true`
 - The web app also posts low-score alerts to `LANGSMITH_ALERT_WEBHOOK_URL`
-- The pre-ship GitHub Action in [.github/workflows/skrutai-web-gate-deploy.yml](/Users/suryakanta/Desktop/hacks/webinars/skrutai-webinar-guardian/.github/workflows/skrutai-web-gate-deploy.yml) runs `npm run eval:pre-ship -w skrutai-web`
+- The pre-ship GitHub Action in [.github/workflows/skrutai-web-gate-deploy.yml](.github/workflows/skrutai-web-gate-deploy.yml) runs `npm run eval:pre-ship -w skrutai-web`
 - The monitoring app accepts alert webhooks at `POST /api/alerts/langsmith`
+
+## CI pre-ship gate and alert email
+
+The GitHub Actions workflow [.github/workflows/skrutai-web-gate-deploy.yml](.github/workflows/skrutai-web-gate-deploy.yml) runs the pre-ship gate on every push to `main` (and on manual dispatch). The full alert chain is:
+
+```
+eval:pre-ship (fails, exit 1)
+  -> Notify step POSTs breaching metrics to the monitoring webhook
+    -> monitoring POST /api/alerts/langsmith sees metrics < thresholds (breach)
+      -> Resend email to ALERT_RECIPIENT_EMAIL
+```
+
+An email is only sent when the reported metrics are **below** the monitoring thresholds. A red gate alone is not enough — the metrics themselves must breach.
+
+### Thresholds
+
+| Metric        | Threshold |
+| ------------- | --------- |
+| hallucination | 0.80      |
+| ragPrecision  | 0.75      |
+| ragRecall     | 0.75      |
+| security      | 0.90      |
+
+### Forcing a failure (to demo the email)
+
+The eval reads `PRE_SHIP_FORCE_FAIL`. When truthy (`1` / `true` / `yes`) it short-circuits the LLM call, writes deterministically breaching metrics (all `0.2`), and exits `1`. There are two ways to turn it on:
+
+**1. Manual dispatch toggle**
+
+Actions -> "skrutai-web gate and deploy" -> Run workflow -> check "Force the pre-ship gate to fail…", or:
+
+```bash
+gh workflow run skrutai-web-gate-deploy.yml -f force_fail=true
+```
+
+**2. Commit-message flag (on push)**
+
+`workflow_dispatch` inputs are not available on a push, so a push instead fails when the **head commit** message contains `[force-fail]`:
+
+```bash
+git commit -m "test alert path [force-fail]"
+git push
+```
+
+The workflow wires both together:
+
+```yaml
+env:
+  PRE_SHIP_FORCE_FAIL: ${{ inputs.force_fail || contains(github.event.head_commit.message, '[force-fail]') }}
+```
+
+Notes:
+- The marker must be in the **latest** commit of the push, not an earlier one in the batch.
+- A forced failure **skips the Vercel deploy** (`if: success()`) — a failing gate should not ship. The email still sends because the Notify step uses `if: always() && steps.eval.outcome == 'failure'`.
+- A normal push (no marker, toggle off) runs the real LLM eval and deploys on pass.
+
+### Required workflow secrets
+
+- `OPENAI_API_KEY`, `OPENAI_MODEL` — pre-ship eval
+- `MONITORING_ALERT_WEBHOOK_URL` — monitoring `POST /api/alerts/langsmith` endpoint
+- `VERCEL_TOKEN` — deploy step (the `--project prj_…` id on the same line is an identifier, not a secret)
 
 ## Notes
 
