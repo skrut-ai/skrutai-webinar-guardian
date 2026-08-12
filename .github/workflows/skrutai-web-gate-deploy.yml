@@ -5,6 +5,11 @@ on:
     branches:
       - main
   workflow_dispatch:
+    inputs:
+      force_fail:
+        description: "Force the pre-ship gate to fail with breaching metrics (fires the alert email)"
+        type: boolean
+        default: false
 
 jobs:
   gate:
@@ -20,6 +25,8 @@ jobs:
           node-version: 20
       - run: npm ci
       - id: eval
+        env:
+          PRE_SHIP_FORCE_FAIL: ${{ inputs.force_fail }}
         run: npm run eval:pre-ship -w skrutai-web
       - name: Deploy web app to Vercel
         if: success()
