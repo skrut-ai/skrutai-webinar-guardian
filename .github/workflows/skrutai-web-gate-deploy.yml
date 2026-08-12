@@ -26,7 +26,9 @@ jobs:
       - run: npm ci
       - id: eval
         env:
-          PRE_SHIP_FORCE_FAIL: ${{ inputs.force_fail }}
+          # Fails on manual dispatch when the toggle is checked, or on any push
+          # whose commit message contains [force-fail].
+          PRE_SHIP_FORCE_FAIL: ${{ inputs.force_fail || contains(github.event.head_commit.message, '[force-fail]') }}
         run: npm run eval:pre-ship -w skrutai-web
       - name: Deploy web app to Vercel
         if: success()
