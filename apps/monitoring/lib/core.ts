@@ -333,6 +333,7 @@ export async function sendDemoEmail(input: EmailInput): Promise<{ delivered: boo
         const detail = await response.text();
         console.warn(`[skrutai-monitoring] Resend failed: ${detail}`);
       } else {
+        console.log(`[skrutai-monitoring] Resend email sent to ${input.to}: ${input.subject}`);
         return { delivered: true, transport: "resend" };
       }
     } catch (error) {
@@ -340,6 +341,7 @@ export async function sendDemoEmail(input: EmailInput): Promise<{ delivered: boo
     }
   }
 
-  console.log("[skrutai-monitoring] demo email", input.subject, input.preview);
+  console.log(`[skrutai-monitoring] demo email fallback for ${input.to}: ${input.subject}`);
+  console.log("[skrutai-monitoring] demo email preview", input.preview);
   return { delivered: false, transport: "console" };
 }
