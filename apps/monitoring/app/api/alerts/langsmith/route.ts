@@ -58,9 +58,10 @@ export async function POST(request: Request) {
     const summary = decision.failed.map((item) => `${item.label} ${Math.round(item.value * 100)}% < ${Math.round(item.threshold * 100)}%`).join(", ");
     const subject = `skrutai-monitoring LangSmith threshold breached`;
     const preview = `Source: ${body.source ?? "unknown"} | Model: ${body.model ?? "unknown"} | ${summary}`;
+    const recipient = process.env.ALERT_RECIPIENT_EMAIL ?? state.config.recipientEmail;
 
     await sendDemoEmail({
-      to: state.config.recipientEmail,
+      to: recipient,
       subject,
       preview,
       kind: "post-ship"
@@ -78,7 +79,7 @@ export async function POST(request: Request) {
         }
       },
       emails: [
-        createEmail("post-ship", current.config.recipientEmail, subject, preview),
+        createEmail("post-ship", recipient, subject, preview),
         ...current.emails
       ],
       events: [
