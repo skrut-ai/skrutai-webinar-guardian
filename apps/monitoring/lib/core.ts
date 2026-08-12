@@ -312,26 +312,30 @@ export async function sendDemoEmail(input: EmailInput): Promise<{ delivered: boo
   const from = process.env.RESEND_FROM_EMAIL;
 
   if (apiKey && from) {
-    const response = await fetch("https://api.resend.com/emails", {
-      method: "POST",
-      headers: {
-        Authorization: `Bearer ${apiKey}`,
-        "Content-Type": "application/json"
-      },
-      body: JSON.stringify({
-        from,
-        to: [input.to],
-        subject: input.subject,
-        text: input.preview
-      })
-    });
+    try {
+      const response = await fetch("https://api.resend.com/emails", {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${apiKey}`,
+          "Content-Type": "application/json"
+        },
+        body: JSON.stringify({
+          from,
+          to: [input.to],
+          subject: input.subject,
+          text: input.preview
+        })
+      });
 
-    if (!response.ok) {
-      const detail = await response.text();
-      throw new Error(`Resend request failed: ${detail}`);
+      if (!response.ok) {
+        const detail = await response.text();
+        console.warn(`[skrutai-monitoring] Resend failed: ${detail}`);
+      } else {
+        return { delivered: true, transport: "resend" };
+      }
+    } catch (error) {
+      console.warn("[skrutai-monitoring] Resend request threw, falling back to console", error);
     }
-
-    return { delivered: true, transport: "resend" };
   }
 
   console.log("[skrutai-monitoring] demo email", input.subject, input.preview);
