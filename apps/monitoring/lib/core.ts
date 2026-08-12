@@ -1,6 +1,7 @@
 import { randomUUID } from "crypto";
 import fs from "fs/promises";
 import path from "path";
+import os from "os";
 
 export type MetricName = "hallucination" | "ragPrecision" | "ragRecall" | "security";
 
@@ -123,7 +124,8 @@ export function metricStatus(metrics: MetricSnapshot, thresholds: Thresholds) {
   };
 }
 
-const storePath = path.join(process.cwd(), ".data", "skrutai-monitoring.json");
+const storeRoot = process.env.MONITORING_STORE_DIR ?? (process.env.VERCEL ? os.tmpdir() : process.cwd());
+const storePath = path.join(storeRoot, ".data", "skrutai-monitoring.json");
 const supabaseUrl = process.env.SUPABASE_URL ?? process.env.NEXT_PUBLIC_SUPABASE_URL ?? "";
 const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY ?? "";
 const supabaseTable = process.env.SUPABASE_TABLE ?? "skrutai_monitoring_state";
